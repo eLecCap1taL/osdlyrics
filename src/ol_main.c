@@ -916,7 +916,12 @@ _stop_position_timer (void)
 int
 main (int argc, char **argv)
 {
+  printf("Hi Console!Again!\n");
+  // return  0;
   _initialize (argc, argv);
+ 
+  printf("init ok");
+ 
   gtk_main ();
   _uninitialize ();
   return 0;
