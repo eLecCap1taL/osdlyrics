@@ -14,6 +14,7 @@ NETEASE_LYRIC_URL = '/api/song/lyric'
 gettext.bindtextdomain('osdlyrics')
 gettext.textdomain('osdlyrics')
 
+import logging
 
 class NeteaseTranslatedSource(BaseLyricSourcePlugin):
     """ Lyric source from music.163.com
@@ -72,6 +73,17 @@ class NeteaseTranslatedSource(BaseLyricSourcePlugin):
             raise http.client.HTTPException(status, '')
         parsed = json.loads(content.decode('utf-8'))
         result = result + list(map(map_func, parsed['result']['songs']))
+
+
+        try:
+            title_lower = (metadata.title or '').strip().lower()
+            exact_matches = [r for r in result if (r._title or '').strip().lower() == title_lower]
+            others = [r for r in result if (r._title or '').strip().lower() != title_lower]
+            result = exact_matches + others
+        except Exception as e:
+            logging.warning("CAP Sorting search result failed: %s", str(e))
+
+        
         return result
 
     def do_download(self, downloadinfo):

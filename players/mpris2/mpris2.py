@@ -117,11 +117,13 @@ class Mpris2Player(BasePlayer):
             if self.get_status() == STATUS.PLAYING:
                 # 发一个play命令，强制刷新 position
                 self._player.Play()
-                logging.warning("CAP synced")
+                # logging.warning("CAP synced")
             else:
-                logging.warning("CAP not sync, stopped")
+                pass
+                # logging.warning("CAP not sync, stopped")
         except Exception as e:
-            logging.warning("CAP Sync play failed: %s", e)
+            pass
+            # logging.warning("CAP Sync play failed: %s", e)
         return False
 
     def _start_sync_spotify_status(self):
@@ -130,7 +132,7 @@ class Mpris2Player(BasePlayer):
 
                 if(self.refresh_spotify_status_freqcnt>0):
                     self.refresh_spotify_status_freqcnt-=1
-                    logging.warning("CAP high freq check")
+                    # logging.warning("CAP high freq check")
                     time.sleep(0.3)  # fast check
                 else:
                     time.sleep(2)  # 每2秒检查一次
@@ -174,7 +176,7 @@ class Mpris2Player(BasePlayer):
                 getattr(self, method)()
 
     def _player_seeked(self, position):
-        logging.warning("CAP %s",position)
+        # logging.warning("CAP %s",position)
         self.position_changed(position//1000)
         # self.position_changed((2*(position // 1000)+position / 1000)/3)
 
