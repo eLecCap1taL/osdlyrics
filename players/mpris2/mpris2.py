@@ -29,6 +29,10 @@ from osdlyrics.metadata import Metadata
 from osdlyrics.player_proxy import (CAPS, REPEAT, STATUS, BasePlayer,
                                     BasePlayerProxy, PlayerInfo)
 
+import threading
+from gi.repository import GLib
+import time
+
 # These constants map flags/enums from MPRIS2-specific values to OSDLyrics values.
 CAPS_MAP = {
     'CanGoNext': CAPS.NEXT,
@@ -80,10 +84,12 @@ class ProxyObject(BasePlayerProxy):
 
 class Mpris2Player(BasePlayer):
     def __init__(self, proxy, player_name):
+        logging.warning("CAP yes i init1")
         super().__init__(proxy, player_name)
         self._properties_changed_signal = None
         self._seeked_signal = None
         self._name_watch = None
+        self.refresh_spotify_status_freqcnt = 0
         try:
             mpris2_object_path = MPRIS2_PREFIX + player_name
             self._player = dbus.Interface(
@@ -101,8 +107,36 @@ class Mpris2Player(BasePlayer):
                 'Seeked', self._player_seeked)
             self._name_watch = self.connection.watch_name_owner(
                 mpris2_object_path, self._name_lost)
+            
+            self._start_sync_spotify_status()
         except Exception:
             self.disconnect()
+
+    def refresh_spotify_status(self):
+        try:
+            if self.get_status() == STATUS.PLAYING:
+                # 发一个play命令，强制刷新 position
+                self._player.Play()
+                logging.warning("CAP synced")
+            else:
+                logging.warning("CAP not sync, stopped")
+        except Exception as e:
+            logging.warning("CAP Sync play failed: %s", e)
+        return False
+
+    def _start_sync_spotify_status(self):
+        def poll_loop():
+            while True:
+
+                if(self.refresh_spotify_status_freqcnt>0):
+                    self.refresh_spotify_status_freqcnt-=1
+                    logging.warning("CAP high freq check")
+                    time.sleep(0.3)  # fast check
+                else:
+                    time.sleep(2)  # 每2秒检查一次
+
+                self.refresh_spotify_status()
+        threading.Thread(target=poll_loop, daemon=True).start()
 
     def _name_lost(self, name):
         if name:
@@ -121,6 +155,8 @@ class Mpris2Player(BasePlayer):
         BasePlayer.disconnect(self)
 
     def _player_properties_changed(self, iface, changed, invalidated):
+        self.refresh_spotify_status_freqcnt+=10
+
         caps_props = ['CanGoNext', 'CanGoPrevious', 'CanPlay', 'CanPause', 'CanSeek']
         prop_map = {'PlaybackStatus': 'status_changed',
                     'LoopStatus': 'repeat_changed',
@@ -138,7 +174,9 @@ class Mpris2Player(BasePlayer):
                 getattr(self, method)()
 
     def _player_seeked(self, position):
-        self.position_changed(position // 1000)
+        logging.warning("CAP %s",position)
+        self.position_changed(position//1000)
+        # self.position_changed((2*(position // 1000)+position / 1000)/3)
 
     @property
     def object_path(self):
@@ -233,6 +271,7 @@ class Mpris2Player(BasePlayer):
 
 def run():
     mpris2 = ProxyObject()
+    logging.warning("CAP ok 222 runnig")
     mpris2.run()
 
 
