@@ -178,7 +178,7 @@ class Mpris2Player(BasePlayer):
     def _player_seeked(self, position):
         # logging.warning("CAP %s",position)
         self.position_changed(position//1000)
-        # self.position_changed((2*(position // 1000)+position / 1000)/3)
+        # self.position_changed(((position // 1000)+position / 1000)/2)
 
     @property
     def object_path(self):
